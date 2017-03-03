@@ -29,12 +29,12 @@ bool load_content() {
   geom4 = geometry_builder::create_box();
 
   // Load in model
-  auto src = "../../assimp-src/test/models/OBJ/box.obj";
+  auto src = "../../assimp-src/test/models/OBJ/stone_1.obj";
   geom3 = geometry(src);
 
   src = "../../assimp-src/test/models/LWO/LWO2/uvtest.png";
   tpng = texture(src, false, false);
-  src = "../../assimp-src/test/models/OBJ/engineflare1.jpg";
+  src = "../../assimp-src/test/models/OBJ/Craggy_Rock_With_Moss_UV_CM_1.jpg";
   tjpg = texture(src, false, false);
 
   array<string, 6> filenames = {"textures/sahara_ft.jpg", "textures/sahara_bk.jpg", "textures/sahara_up.jpg",

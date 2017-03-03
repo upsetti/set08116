@@ -20,8 +20,8 @@ bool load_content() {
   vector<vec3> positions{vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f), vec3(-1.0f, 1.0f, 0.0f),
                          vec3(1.0f, 1.0f, 0.0f)};
   // Colours
-  vector<vec4> colours{vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f),
-                       vec4(1.0f, 0.0f, 0.0f, 1.0f)};
+  vector<vec4> colours{ vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.5f, 0.0f, 1.0f), vec4(0.0f, 1.0f, 0.0f, 1.0f),
+	  vec4(0.0f, 0.5f, 1.0f, 1.0f) };
   // Add to the geometry
   geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
   geom.add_buffer(colours, BUFFER_INDEXES::COLOUR_BUFFER);
@@ -62,6 +62,12 @@ bool update(float delta_time) {
   if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
     pos += vec3(5.0f, 0.0f, 0.0f) * delta_time;
   }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_1)) {
+	  pos += vec3(0.0f, 5.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_2)) {
+	  pos += vec3(0.0f, -5.0f, 0.0f) * delta_time;
+  }
   // Update the camera
   cam.update(delta_time);
   return true;
@@ -74,11 +80,12 @@ bool render() {
   // *********************************
   // Create transformation matrices
   // ******************************
-
-
+  R = rotate(mat4(1.0f), theta, vec3(0.0f, 0.0f, 1.0f));
+  S = scale(mat4(1.0f), vec3(2.0, 3.0f, 4.0f));
+  T = translate(mat4(1.0f), pos);
 
   // Combine matrices to set M - remember multiplication order
-
+  M = (R * S) * T;
   // *********************************
   // Create MVP matrix
   auto V = cam.get_view();

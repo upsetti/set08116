@@ -12,37 +12,67 @@ float theta = 0.0f;
 float rho = 0.0f;
 vec3 pos(0.0f, 0.0f, 0.0f);
 float s = 1.0f;
+float total_time = 0.0f;
 
 bool load_content() {
-  // Create cube data - twelve triangles triangles
+  // Create cube data - twelve triangles
   // Positions
   vector<vec3> positions{
       // *********************************
       // Add the position data for triangles here, (6 verts per side)
-      // Front
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
 
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
 
-      // Back
+	  vec3(1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
 
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
 
-      // Right
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
 
+	  vec3(1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
 
-      // Left
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f, 1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
 
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(1.0f, 1.0f,-1.0f),
 
-      // Top
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
 
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
 
-      // Bottom
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
 
-
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(1.0f,-1.0f, 1.0f)
       // *********************************
   };
   // Colours
   vector<vec4> colours;
   for (auto i = 0; i < positions.size(); ++i) {
-    colours.push_back(vec4(i % 2, 0.6, 0.0f, 1.0f)); // Notice how I got those Rad colours?
+    colours.push_back(vec4(i%2, i%2, i%2, 1.0f)); // Notice how I got those Rad colours?
   }
   // Add to the geometry
   geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
@@ -66,39 +96,41 @@ bool update(float delta_time) {
   // *********************************
   // Use keys to update transform values
   // WSAD - movement
-  // Cursor - rotation
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_W)) {
+		pos += vec3(0.0f, 0.0f, -10.0f) * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_S)) {
+		pos += vec3(0.0f, 0.0f, 10.0f) * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_D)) {
+		pos += vec3(-10.0f, 0.0f, 0.0f) * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_A)) {
+		pos += vec3(10.0f, 0.0f, 0.0f) * delta_time;
+	}
+  // Arrow Keys - rotation
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_UP)) {
+		theta -= pi<float>() * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_DOWN)) {
+		theta += pi<float>() * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
+		rho -= pi<float>() * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT)) {
+		rho += pi<float>() * delta_time;
+	}
   // O decrease scale, P increase scale
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // *********************************
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_PAGE_UP))
+	{
+		s += 10.0f * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_PAGE_DOWN))
+	{
+		s -= 10.0f * delta_time;
+	}
+ // *********************************
   // Update the camera
   cam.update(delta_time);
   return true;
@@ -110,10 +142,12 @@ bool render() {
   mat4 T, R, S, M;
   // *********************************
   // Create transformation matrix
-
-
-
-
+  R = eulerAngleXZ(theta, rho);
+  S = scale(mat4(1.0f), vec3(s, s, s));
+  T = translate(mat4(1.0f), pos);
+  // Combine matrices to set M - remember multiplication order
+  M = (R * S) * T;
+    
   // *********************************
   // Create MVP matrix
   auto V = cam.get_view();

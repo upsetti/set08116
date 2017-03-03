@@ -17,30 +17,49 @@ bool load_content() {
   vector<vec3> positions{
       // *********************************
       // Add the position data for triangles here, (6 verts per side)
-      // Front
-
-
-      // Back
-
-
-      // Right
-
-
-      // Left
-
-
-      // Top
-
-
-      // Bottom
-
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f,-1.0f, 1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(1.0f,-1.0f,-1.0f),
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(1.0f, 1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f,-1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(1.0f, 1.0f, 1.0f),
+	  vec3(-1.0f, 1.0f, 1.0f),
+	  vec3(1.0f,-1.0f, 1.0f),
 
       // *********************************
   };
   // Colours
   vector<vec4> colours;
   for (auto i = 0; i < positions.size(); ++i) {
-    colours.push_back(vec4(1.0, i % 2, 0.0f, 1.0f)); // Notice how I got those Rad colours?
+    colours.push_back(vec4(1.0f, i%2, 0.5f, 1.0f)); // Notice how I got those Rad colours?
   }
   // Add to the geometry
   geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
