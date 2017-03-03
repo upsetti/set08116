@@ -8,11 +8,16 @@ using namespace glm;
 map<string, mesh> meshes;
 map<string, texture> textures;
 mesh skybox;
+mesh moon;
 effect eff;
 effect sky_eff;
+effect moon_eff;
 texture tex;
+texture moon_tex;
+texture moon_norm_tex;
 free_camera freecam;
 target_camera targetcam;
+directional_light light;
 GLuint programID;
 bool Fcam = false;
 cubemap cube_map;
@@ -52,6 +57,24 @@ bool load_content() {
 	textures["plane"] = texture("textures/darksand.jpg");
 
 	skybox = mesh(geometry_builder::create_box());
+
+	moon = mesh(geometry_builder::create_sphere(100, 100));
+	moon.get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
+	moon.get_transform().translate(vec3(25.0f, 5.0f, -25.0f));
+	mat.set_diffuse(vec4(2.0f, 2.0f, 2.0f, 1.0f));
+	mat.set_shininess(15.0f);
+	moon.set_material(mat);
+	moon_tex = texture("textures/moonmap2k.jpg");
+	moon_norm_tex = texture("textures/moonnormalmap.png");
+
+	//moon
+	meshes["luna"] = mesh(geometry_builder::create_sphere(100, 100));
+	meshes["luna"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
+	meshes["luna"].get_transform().translate(vec3(25.0f, 5.0f, -25.0f));
+	mat.set_diffuse(vec4(2.0f, 2.0f, 2.0f, 1.0f));
+	mat.set_shininess(15.0f);
+	meshes["luna"].set_material(mat);
+	textures["luna"] = texture("textures/moonmap2k.jpg");
 
 	//trees
 	meshes["canopy"] = mesh(geometry_builder::create_pyramid());
@@ -140,21 +163,12 @@ bool load_content() {
 	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	meshes["pyramid"].set_material(mat);
 	textures["pyramid"] = texture("textures/pyramid.jpg");
-
-	//moon
-	meshes["luna"] = mesh(geometry_builder::create_sphere(100, 100));
-	meshes["luna"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
-	meshes["luna"].get_transform().translate(vec3(25.0f, 5.0f, -25.0f));
-	mat.set_diffuse(vec4(2.0f, 2.0f, 2.0f, 1.0f));
-	mat.set_shininess(15.0f);
-	meshes["luna"].set_material(mat);
-	textures["luna"] = texture("textures/moonmap2k.jpg");
-
+	
 	// Set lighting values
 	points[0].set_position(vec3(-25.0f, 70.0f, 25.0f));
 	points[0].set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	points[0].set_range(70.0f);
-
+	
 	points[1].set_position(vec3(25.0f, 12.0f, 15.0f));
 	points[1].set_light_colour(vec4(0.5f, 0.0f, 0.0f, 1.0f));
 	points[1].set_range(13.0f);
@@ -171,6 +185,10 @@ bool load_content() {
 	spots[2].set_range(20.0f);
 	spots[2].set_power(1.5f);
 
+	light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	light.set_direction(normalize(vec3(1.0f, 1.0f, 0.0f)));
+	
 	// skybox
 	skybox.get_transform().scale = vec3(100.0f, 100.0f, 100.0f);
 	array<string, 6> filenames = { "textures/face.png", "textures/back.png", "textures/up.png",
@@ -187,6 +205,12 @@ bool load_content() {
 	sky_eff.add_shader("shaders/skybox.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	sky_eff.build();
+
+	moon_eff.add_shader("shaders/shader.vert", GL_VERTEX_SHADER);
+	moon_eff.add_shader("shaders/shader.frag", GL_FRAGMENT_SHADER);
+	moon_eff.add_shader("shaders/part_direction.frag", GL_FRAGMENT_SHADER);
+	moon_eff.add_shader("shaders/part_normal_map.frag", GL_FRAGMENT_SHADER);
+	moon_eff.build();
 
 	// Set camera properties
 	targetcam.set_position(vec3(-40.0f, 3.0f, 40.0f));
@@ -294,12 +318,49 @@ bool update(float delta_time) {
 	meshes["pyramid"].get_transform().position.x += sin(theta) * 0.2;
 	meshes["pyramid"].get_transform().position.z -= cos(theta) * 0.2;
 	meshes["pyramid"].get_transform().position.y += sin(theta) * 0.1;
-	meshes["luna"].get_transform().rotate(vec3(-delta_time / 3, -delta_time / 3, 0.0f));
 
 	return true;
 }
 
-bool render() {
+void normal_render() {
+	// Bind effect
+	renderer::bind(moon_eff);
+	// Create MVP matrix
+	auto M = moon.get_transform().get_transform_matrix();
+	auto V = targetcam.get_view();
+	auto P = targetcam.get_projection();
+	if (Fcam) {
+		V = freecam.get_view();
+		P = freecam.get_projection();
+	}
+	auto MVP = P * V * M;
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	// Set M matrix uniform
+	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+	// Set N matrix uniform
+	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
+		value_ptr(moon.get_transform().get_normal_matrix()));
+	// *********************************
+	// Bind material
+	renderer::bind(moon.get_material(), "mat");
+	// Bind light
+	renderer::bind(light, "light");
+	// Bind texture
+	renderer::bind(tex, 0);
+	// Set tex uniform
+	glUniform1i(eff.get_uniform_location("tex"), 0);
+	// Bind normal_map
+	renderer::bind(moon_norm_tex, 1);
+	// Set normal_map uniform
+	glUniform1i(eff.get_uniform_location("normal_map"), 1);
+	// Set eye position
+	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(targetcam.get_position()));
+	// Render mesh
+	renderer::render(moon);
+}
+
+void rendering() {
 	// Render meshes
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
@@ -369,6 +430,11 @@ bool render() {
 		// Render mesh
 		renderer::render(m);
 	}
+}
+
+bool render() {
+	rendering();
+	normal_render();
 
 	return true;
 }
