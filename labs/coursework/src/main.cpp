@@ -19,6 +19,8 @@ cubemap cube_map;
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 float theta = 0.0f;
+vector<point_light> points(4);
+vector<spot_light> spots(5);
 
 bool initialise() {
 	// *********************************
@@ -31,6 +33,20 @@ bool initialise() {
 }
 
 bool load_content() {
+
+	//set materials
+	material mat;
+	mat.set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	mat.set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	mat.set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	mat.set_shininess(25.0f);
+
+	material mat2;
+	mat2.set_emissive(vec4(0.3f, 0.4f, 0.3f, 1.0f));
+	mat2.set_specular(vec4(2.0f, 2.0f, 2.0f, 1.0f));
+	mat2.set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	mat2.set_shininess(40.0f);
+
 	// Create enviroment
 	meshes["plane"] = mesh(geometry_builder::create_plane(65, 65));
 	textures["plane"] = texture("textures/darksand.jpg");
@@ -41,27 +57,37 @@ bool load_content() {
 	meshes["canopy"] = mesh(geometry_builder::create_pyramid());
 	meshes["canopy"].get_transform().scale = vec3(5.0f, 10.0f, 5.0f);
 	meshes["canopy"].get_transform().translate(vec3(-23.0f, 7.5f, -20.0f));
+	mat.set_diffuse(vec4(0.0f, 1.0f, 0.0f, 1.0f));
+	meshes["canopy"].set_material(mat);
 	textures["canopy"] = texture("textures/canopy.png");
 
 	meshes["trunk"] = mesh(geometry_builder::create_cylinder(20, 20));
 	meshes["trunk"].get_transform().scale = vec3(2.5f, 5.0f, 2.5f);
 	meshes["trunk"].get_transform().translate(vec3(-23.0f, 2.5f, -20.0f));
+	mat.set_diffuse(vec4(1.0f, 0.6f, 0.2f, 1.0f));
+	meshes["trunk"].set_material(mat);
 	textures["trunk"] = texture("textures/trunk.png");
 
 	meshes["canopy2"] = mesh(geometry_builder::create_pyramid());
 	meshes["canopy2"].get_transform().scale = vec3(5.0f, 10.0f, 5.0f);
 	meshes["canopy2"].get_transform().translate(vec3(-27.0f, 7.5f, -17.0f));
+	mat2.set_diffuse(vec4(0.0f, 0.5f, 0.0f, 1.0f));
+	meshes["canopy2"].set_material(mat2);
 	textures["canopy2"] = texture("textures/canopy.png");
 
 	meshes["trunk2"] = mesh(geometry_builder::create_cylinder(20, 20));
 	meshes["trunk2"].get_transform().scale = vec3(2.5f, 5.0f, 2.5f);
 	meshes["trunk2"].get_transform().translate(vec3(-27.0f, 2.5f, -17.0f));
+	mat.set_diffuse(vec4(1.0f, 0.6f, 0.2f, 1.0f));
+	meshes["trunk2"].set_material(mat);
 	textures["trunk2"] = texture("textures/trunk.png");
 
 	//rock
 	geometry geom1("models/stone_2.obj");
 	meshes["mountains"] = mesh(geom1);
 	meshes["mountains"].get_transform().translate(vec3(25.0f, 0.0f, 15.0f));
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshes["mountains"].set_material(mat);
 	textures["mountains"] = texture("textures/Craggy_Rock_With_Moss_UV_CM_1.jpg");
 
 	//alien
@@ -69,43 +95,81 @@ bool load_content() {
 	meshes["marvin"] = mesh(geom2);
 	meshes["marvin"].get_transform().translate(vec3(25.0f, 5.0f, 15.0f));
 	meshes["marvin"].get_transform().rotate(vec3(0.0f, theta -= half_pi<float>(), 0.0f));
+	mat.set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	meshes["marvin"].set_material(mat);
 	textures["marvin"] = texture("textures/check_2.png");
 
 	//sphere
 	meshes["orb"] = mesh(geometry_builder::create_sphere(20, 20));
 	meshes["orb"].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
 	meshes["orb"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
+	mat2.set_diffuse(vec4(0.7f, 0.7f, 0.7f, 1.0f));
+	meshes["orb"].set_material(mat2);
 	textures["orb"] = texture("textures/universe.jpg");
 	//torus
 	meshes["torus1"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
 	meshes["torus1"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
 	meshes["torus1"].get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
+	mat.set_diffuse(vec4(1.0f, 2.0f, 2.0f, 1.0f));
+	meshes["torus1"].set_material(mat);
 	textures["torus1"] = texture("textures/geo.jpg");
 
 	meshes["torus2"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
 	meshes["torus2"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
 	meshes["torus2"].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
+	mat.set_diffuse(vec4(1.5f, 1.0f, 0.8f, 1.0f));
+	meshes["torus2"].set_material(mat);
 	textures["torus2"] = texture("textures/colour.jpg");
 
 	meshes["torus3"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
 	meshes["torus3"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
 	meshes["torus3"].get_transform().scale = vec3(0.75f, 0.75f, 0.75f);
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshes["torus3"].set_material(mat);
 	textures["torus3"] = texture("textures/lamecolour.jpg");
 
 	//orbits
 	meshes["lexicon"] = mesh(geometry_builder::create_box());
 	meshes["lexicon"].get_transform().translate(vec3(0.0f, 10.0f, -9.0f));
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshes["lexicon"].set_material(mat);
 	textures["lexicon"] = texture("textures/yell.png");
 
 	meshes["pyramid"] = mesh(geometry_builder::create_pyramid());
 	meshes["pyramid"].get_transform().translate(vec3(0.0f, 10.0f, 9.0f));
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshes["pyramid"].set_material(mat);
 	textures["pyramid"] = texture("textures/pyramid.jpg");
 
 	//moon
 	meshes["luna"] = mesh(geometry_builder::create_sphere(100, 100));
 	meshes["luna"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
-	meshes["luna"].get_transform().translate(vec3(-25.0f, 70.0f, 25.0f));
+	meshes["luna"].get_transform().translate(vec3(25.0f, 5.0f, -25.0f));
+	mat.set_diffuse(vec4(2.0f, 2.0f, 2.0f, 1.0f));
+	mat.set_shininess(15.0f);
+	meshes["luna"].set_material(mat);
 	textures["luna"] = texture("textures/moonmap2k.jpg");
+
+	// Set lighting values
+	points[0].set_position(vec3(-25.0f, 70.0f, 25.0f));
+	points[0].set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	points[0].set_range(70.0f);
+
+	points[1].set_position(vec3(25.0f, 12.0f, 15.0f));
+	points[1].set_light_colour(vec4(0.5f, 0.0f, 0.0f, 1.0f));
+	points[1].set_range(13.0f);
+
+	spots[1].set_position(vec3(0.0f, 15.0f, 0.0f));
+	spots[1].set_light_colour(vec4(2.0f, 2.0f, 2.0f, 1.0f));
+	spots[1].set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
+	spots[1].set_range(30.0f);
+	spots[1].set_power(3.0f);
+
+	spots[2].set_position(vec3(-10.0f, 10.0f, -15.0f));
+	spots[2].set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	spots[2].set_direction(normalize(vec3(-1.0f, -1.0f, -1.0f)));
+	spots[2].set_range(20.0f);
+	spots[2].set_power(1.5f);
 
 	// skybox
 	skybox.get_transform().scale = vec3(100.0f, 100.0f, 100.0f);
@@ -114,8 +178,8 @@ bool load_content() {
 	cube_map = cubemap(filenames);
 
 	// Load in shaders
-	eff.add_shader("shaders/basic_textured.vert", GL_VERTEX_SHADER);
-	eff.add_shader("shaders/basic_textured.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("shaders/multi-light.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/multi-light.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
 
@@ -125,8 +189,8 @@ bool load_content() {
 	sky_eff.build();
 
 	// Set camera properties
-	targetcam.set_position(vec3(40.0f, 5.0f, -40.0f));
-	targetcam.set_target(vec3(0.0f, 21.0f, 0.0f));
+	targetcam.set_position(vec3(-40.0f, 3.0f, 40.0f));
+	targetcam.set_target(vec3(0.0f, 12.0f, 0.0f));
 	targetcam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 2.414f, 1000.0f);
 
 	freecam.set_position(vec3(pi<float>() / 6, 10.0f, 20.0f));
@@ -138,7 +202,7 @@ bool load_content() {
 
 bool update(float delta_time) {
 
-	theta += pi<float>() * delta_time / 2;
+
 
 	// Use keyboard to move the camera - WSAD
 	vec3 translation(0.0f, 0.0f, 0.0f);
@@ -216,6 +280,7 @@ bool update(float delta_time) {
 	//move skybox
 	skybox.get_transform().position = vec3(15.0f, 5.0f, 15.0f);
 
+	theta += pi<float>() * delta_time / 2;
 	//Geometry
 	meshes["orb"].get_transform().rotate(vec3(delta_time / 2, delta_time / 2, delta_time / 2));
 	meshes["torus1"].get_transform().rotate(vec3(-delta_time * 2, -delta_time * 2, -delta_time * 2));
@@ -229,6 +294,7 @@ bool update(float delta_time) {
 	meshes["pyramid"].get_transform().position.x += sin(theta) * 0.2;
 	meshes["pyramid"].get_transform().position.z -= cos(theta) * 0.2;
 	meshes["pyramid"].get_transform().position.y += sin(theta) * 0.1;
+	meshes["luna"].get_transform().rotate(vec3(-delta_time / 3, -delta_time / 3, 0.0f));
 
 	return true;
 }
@@ -282,9 +348,24 @@ bool render() {
 		// Set MVP matrix uniform
 		glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 
+		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+		// Set N matrix uniform - remember - 3x3 matrix
+		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
+		// Bind material
+		renderer::bind(m.get_material(), "mat");
+		renderer::bind(m.get_material(), "mat2");
+		// Bind point lights
+		renderer::bind(points, "points");
+		// Bind spot lights
+		renderer::bind(spots, "spots");
+
 		// Bind and set texture
 		renderer::bind(textures[e.first], 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
+
+		// Set eye position- Get this from active camera
+		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(targetcam.get_position()));
+
 		// Render mesh
 		renderer::render(m);
 	}
