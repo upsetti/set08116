@@ -14,6 +14,7 @@ out VertexData {
   vec2 tex_coord;
 };
 
+
 void main() {
   vec4 position = gl_in[0].gl_Position;
 
@@ -27,32 +28,31 @@ void main() {
   fire_colour.a = clamp((2.0 - height[0]) / 3.0, 0.0, 1.0);
 
   // Expand point to 4 verts
-   //point VA (-0.5, -0.5)
+  //point VA (-0.5, -0.5)
   vec2 va = position.xy + vec2(-0.5, -0.5) * point_size;
   gl_Position = P * vec4(va, position.zw);
   tex_coord = vec2(0.0, 0.0);
   colour = fire_colour;
   EmitVertex();
   // *********************************
-   //point VB (0.5, -0.5)
-
-
-
-
-
+  //point VB (0.5, -0.5)
+  vec2 vb = position.xy + vec2(0.5, -0.5) * point_size;
+  gl_Position = P * vec4(vb, position.zw);
+  tex_coord = vec2(1.0, 0.0);
+  colour = fire_colour;
+  EmitVertex();
   // point VD (-0.5, -0.5)
-
-
-
-
-
+  vec2 vc = position.xy + vec2(-0.5, 0.5) * point_size;
+  gl_Position = P * vec4(vc, position.zw);
+  tex_coord = vec2(0.0, 1.0);
+  colour = fire_colour;
+  EmitVertex();
   // point VC (0.5, -0.5)
-
-
-
-
-
+  vec2 vd = position.xy + vec2(0.5, 0.5) * point_size;
+  gl_Position = P * vec4(vd, position.zw);
+  tex_coord = vec2(1.0, 1.0);
+  colour = fire_colour;
+  EmitVertex();
   // *********************************
-
   EndPrimitive();
 }

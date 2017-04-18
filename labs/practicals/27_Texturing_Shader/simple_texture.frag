@@ -1,24 +1,16 @@
 #version 440
 
-out vec4 daColour;
-in vec3 theNormal
-in vec3 thePosition;
+// Sampler used to get texture colour
+uniform sampler2D tex;
 
-uniform vec3 lightPosition;
-
-
-// Incoming vertex colour
-layout(location = 0) in vec4 vertex_colour;
-
+// Incoming texture coordinate
+layout(location = 0) in vec2 tex_coord;
 // Outgoing colour
-layout(location = 0) out vec4 colour;
+layout(location = 0) out vec4 out_colour;
 
-void main()
-{
-	vec3 lightVector = normalize(lightPosition - thePosition);
-	float brightness = dot(lightVector, theNormal);
-	daColour = vec4(brightness, brightness, brightness, 1.0);
-	// Set outgoing vertex colour
-   colour = vertex_colour;
+void main() {
+  // *********************************
+  // Set out colour to sampled texture colour
+  out_colour = texture(tex, tex_coord);
+  // *********************************
 }
-

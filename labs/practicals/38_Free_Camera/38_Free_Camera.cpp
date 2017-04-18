@@ -7,20 +7,23 @@ using namespace glm;
  
 map<string, mesh> meshes;
 map<string, texture> textures;
-mesh skybox;
 effect eff;
-effect sky_eff;
 texture tex;
+mesh skybox;
+effect sky_eff;
+cubemap cube_map;
 free_camera freecam;
 target_camera targetcam;
-GLuint programID;
 bool Fcam = false;
-cubemap cube_map;
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 float theta = 0.0f;
 vector<point_light> points(4);
 vector<spot_light> spots(5);
+
+std::array<mesh, 6> meshhierarchy;
+std::array<texture, 6> texhierarchy;
+effect hierarchy_eff;
  
 bool initialise() {
     // *********************************
@@ -49,7 +52,7 @@ bool load_content() {
 
     // Create enviroment
     meshes["plane"] = mesh(geometry_builder::create_plane(65,65));
-	textures["plane"] = texture("textures/darksand.jpg");
+	textures["plane"] = texture("textures/watertex.jpg");
 
 	skybox = mesh(geometry_builder::create_box());
 
@@ -99,48 +102,6 @@ bool load_content() {
 	meshes["marvin"].set_material(mat);
 	textures["marvin"] = texture("textures/check_2.png");
 
-	//sphere
-    meshes["orb"] = mesh(geometry_builder::create_sphere(20,20));
-	meshes["orb"].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
-	meshes["orb"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
-	mat2.set_diffuse(vec4(0.7f, 0.7f, 0.7f, 1.0f));
-	meshes["orb"].set_material(mat2);
-	textures["orb"] = texture("textures/universe.jpg");
-	//torus
-    meshes["torus1"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
-	meshes["torus1"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
-	meshes["torus1"].get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
-	mat.set_diffuse(vec4(1.0f, 2.0f, 2.0f, 1.0f));
-	meshes["torus1"].set_material(mat);
-	textures["torus1"] = texture("textures/geo.jpg");
-	
-	meshes["torus2"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
-	meshes["torus2"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
-	meshes["torus2"].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
-	mat.set_diffuse(vec4(1.5f, 1.0f, 0.8f, 1.0f));
-	meshes["torus2"].set_material(mat);
-	textures["torus2"] = texture("textures/colour.jpg");
-
-	meshes["torus3"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
-	meshes["torus3"].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
-	meshes["torus3"].get_transform().scale = vec3(0.75f, 0.75f, 0.75f);
-	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
-	meshes["torus3"].set_material(mat);
-	textures["torus3"] = texture("textures/lamecolour.jpg");
-
-	//orbits
-	meshes["lexicon"] = mesh(geometry_builder::create_box());
-	meshes["lexicon"].get_transform().translate(vec3(0.0f, 10.0f, -9.0f));
-	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
-	meshes["lexicon"].set_material(mat);
-	textures["lexicon"] = texture("textures/yell.png");
-
-	meshes["pyramid"] = mesh(geometry_builder::create_pyramid());
-	meshes["pyramid"].get_transform().translate(vec3(0.0f, 10.0f, 9.0f));
-	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
-	meshes["pyramid"].set_material(mat);
-	textures["pyramid"] = texture("textures/pyramid.jpg");
-
 	//moon
 	meshes["luna"] = mesh(geometry_builder::create_sphere(100, 100));
 	meshes["luna"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
@@ -150,6 +111,47 @@ bool load_content() {
 	mat.set_shininess(15.0f);
 	meshes["luna"].set_material(mat);
 	textures["luna"] = texture("textures/moonmap2k.jpg");
+
+	//transform hierarchy
+	meshhierarchy[0] = mesh(geometry_builder::create_sphere(20, 20));
+	meshhierarchy[0].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
+	meshhierarchy[0].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
+	mat2.set_diffuse(vec4(0.7f, 0.7f, 0.7f, 1.0f));
+	meshhierarchy[0].set_material(mat2);
+	texhierarchy[0] = texture("textures/universe.jpg");
+	
+	meshhierarchy[1] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
+	meshhierarchy[1].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
+	meshhierarchy[1].get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
+	mat.set_diffuse(vec4(1.0f, 2.0f, 2.0f, 1.0f));
+	meshhierarchy[1].set_material(mat);
+	texhierarchy[1] = texture("textures/geo.jpg");
+
+	meshhierarchy[2] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
+	meshhierarchy[2].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
+	meshhierarchy[2].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
+	mat.set_diffuse(vec4(1.5f, 1.0f, 0.8f, 1.0f));
+	meshhierarchy[2].set_material(mat);
+	texhierarchy[2] = texture("textures/colour.jpg");
+
+	meshhierarchy[3] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
+	meshhierarchy[3].get_transform().translate(vec3(0.0f, 10.0f, 0.0f));
+	meshhierarchy[3].get_transform().scale = vec3(0.75f, 0.75f, 0.75f);
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshhierarchy[3].set_material(mat);
+	texhierarchy[3] = texture("textures/lamecolour.jpg");
+
+	meshhierarchy[4] = mesh(geometry_builder::create_box());
+	meshhierarchy[4].get_transform().translate(vec3(0.0f, 10.0f, -9.0f));
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshhierarchy[4].set_material(mat);
+	texhierarchy[4] = texture("textures/yell.png");
+
+	meshhierarchy[5] = mesh(geometry_builder::create_pyramid());
+	meshhierarchy[5].get_transform().translate(vec3(0.0f, 10.0f, 9.0f));
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshhierarchy[5].set_material(mat);
+	texhierarchy[5] = texture("textures/pyramid.jpg");
 
 	// Set lighting values
 	points[0].set_position(vec3(-25.0f, 70.0f, 25.0f));
@@ -179,8 +181,8 @@ bool load_content() {
 	cube_map = cubemap(filenames);
 
     // Load in shaders
-	eff.add_shader("51_Multiple_Lights/multi-light.vert", GL_VERTEX_SHADER);
-	eff.add_shader("51_Multiple_Lights/multi-light.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("shaders/multi-light.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/multi-light.frag", GL_FRAGMENT_SHADER);
     // Build effect
     eff.build();
 
@@ -188,6 +190,9 @@ bool load_content() {
 	sky_eff.add_shader("shaders/skybox.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	sky_eff.build();
+
+	hierarchy_eff.add_shader("shaders/multi-light.vert", GL_VERTEX_SHADER);
+	hierarchy_eff.add_shader("shaders/multi-light.frag", GL_FRAGMENT_SHADER);
  
     // Set camera properties
 	targetcam.set_position(vec3(-40.0f, 3.0f, 40.0f));
@@ -283,23 +288,53 @@ bool update(float delta_time) {
 
   theta += pi<float>() * delta_time / 2;
   //Geometry
-  meshes["orb"].get_transform().rotate(vec3(delta_time/2, delta_time/2, delta_time/2));
-  meshes["torus1"].get_transform().rotate(vec3(-delta_time*2, -delta_time*2, -delta_time*2));
-  meshes["torus2"].get_transform().rotate(vec3(0.0f, delta_time, delta_time));
-  meshes["torus3"].get_transform().rotate(vec3(-delta_time/3, -delta_time/3, 0.0f));
-  meshes["lexicon"].get_transform().rotate(vec3(delta_time/3, -delta_time/3, 0.0f));
-  meshes["lexicon"].get_transform().position.x += sin(theta) * 0.2;
-  meshes["lexicon"].get_transform().position.z += cos(theta) * 0.2;
-  meshes["lexicon"].get_transform().position.y -= sin(theta) * 0.1;
-  meshes["pyramid"].get_transform().rotate(vec3(-delta_time*2, -delta_time * 2,0.0f));
-  meshes["pyramid"].get_transform().position.x += sin(theta) * 0.2;
-  meshes["pyramid"].get_transform().position.z -= cos(theta) * 0.2;
-  meshes["pyramid"].get_transform().position.y += sin(theta) * 0.1;
+  meshhierarchy[0].get_transform().rotate(vec3(delta_time/2, delta_time/2, delta_time/2));
+  meshhierarchy[1].get_transform().rotate(vec3(-delta_time*2, -delta_time*2, -delta_time*2));
+  meshhierarchy[2].get_transform().rotate(vec3(0.0f, delta_time, delta_time));
+  meshhierarchy[3].get_transform().rotate(vec3(-delta_time/3, -delta_time/3, 0.0f));
+  meshhierarchy[4].get_transform().rotate(vec3(delta_time/3, -delta_time/3, 0.0f));
+  meshhierarchy[4].get_transform().position.x += sin(theta) * 0.2;
+  meshhierarchy[4].get_transform().position.z += cos(theta) * 0.2;
+  meshhierarchy[4].get_transform().position.y -= sin(theta) * 0.1;
+  meshhierarchy[5].get_transform().rotate(vec3(-delta_time*2, -delta_time * 2,0.0f));
+  meshhierarchy[5].get_transform().position.x += sin(theta) * 0.2;
+  meshhierarchy[5].get_transform().position.z -= cos(theta) * 0.2;
+  meshhierarchy[5].get_transform().position.y += sin(theta) * 0.1;
+
   meshes["luna"].get_transform().rotate(vec3(-delta_time / 3,-delta_time / 3, 0.0f));
 
   return true;
 }
- 
+ /*
+void renderheirarchy() {
+	// Super effecient render loop, notice the things we only have to do once, rather than in a loop
+	// Bind effect
+	renderer::bind(hierarchy_eff);
+	// Get PV
+	const auto PV = targetcam.get_projection() * targetcam.get_view();
+	// Set the texture value for the shader here
+	glUniform1i(eff.get_uniform_location("tex"), 0);
+	// Find the lcoation for the MVP uniform
+	const auto loc = eff.get_uniform_location("MVP");
+
+	// Render meshes
+	for (size_t i = 0; i < meshhierarchy.size(); i++) {
+		auto M = meshhierarchy[i].get_transform().get_transform_matrix();
+		// Apply the heirarchy chain
+		for (size_t j = i; j > 0; j--) {
+			M = meshhierarchy[j - 1].get_transform().get_transform_matrix() * M;
+		}
+
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(PV * M));
+		// Bind texture to renderer
+		renderer::bind(texhierarchy[i], 0);
+		// Render mesh
+		renderer::render(meshhierarchy[i]);
+	}
+}
+
+*/
 bool render() {
   // Render meshes
 	glDisable(GL_DEPTH_TEST);
@@ -331,7 +366,8 @@ bool render() {
 	glDepthMask(GL_TRUE);
 	glEnable(GL_CULL_FACE);
 
-
+	///// ??? hierarchy here ??? /////
+	
   for (auto &e : meshes) {
     auto m = e.second;
     // Bind effect

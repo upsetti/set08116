@@ -42,9 +42,13 @@ bool load_content() {
   // *********************************
   // Load textures sign.jpg
   // 0 - no mipmaps, no anisotropic
+  texs[0] = texture("textures/sign.jpg", false, false);
   // 1 - no mipmaps, anisotropic
+  texs[1] = texture("textures/sign.jpg", false, true);
   // 2 - mipmaps, anisotropic
+  texs[2] = texture("textures/sign.jpg", true, true);
   // 3 - mipmaps, no anisotropic
+  texs[3] = texture("textures/sign.jpg", true, false);
   // ******************************
 
 

@@ -23,7 +23,7 @@ bool load_content() {
 	// Need to rotate the teapot on x by negative pi/2
 	meshes["teapot"].get_transform().rotate(vec3(-half_pi<float>(), 0.0f, 0.0f));
 	// Scale the teapot - (0.1, 0.1, 0.1)
-	meshes["teapot"].get_transform().scale *= vec3(0.1f);
+	meshes["teapot"].get_transform().scale = vec3(0.1f);
 	// ***********************
 	// Set materials
 	// - all emissive is black
@@ -32,10 +32,10 @@ bool load_content() {
 	// ***********************
 	// White plane
 	material mat;
-	mat.set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	mat.set_emissive(vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	mat.set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	mat.set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	mat.set_shininess(25.0f);
+	mat.set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	meshes["plane"].set_material(mat);
 	// Red teapot
 	mat.set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
@@ -53,8 +53,8 @@ bool load_content() {
 	spot.set_power(10.0f);
 
 	// Load in shaders
-	shadow_eff.add_shader("50_Spot_Light/spot.vert", GL_VERTEX_SHADER);
-	shadow_eff.add_shader("50_Spot_Light/spot.frag", GL_FRAGMENT_SHADER);
+	shadow_eff.add_shader("shaders/spot.vert", GL_VERTEX_SHADER);
+	shadow_eff.add_shader("shaders/spot.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	shadow_eff.build();
 
@@ -70,8 +70,9 @@ bool update(float delta_time) {
 	meshes["teapot"].get_transform().rotate(vec3(0.0f, 0.0f, half_pi<float>()) * delta_time);
 
 	// *********************************
-	// Update the shadow map properties from the spot light
+	// Update the shadow map light_position from the spot light
 	shadow.light_position = spot.get_position();
+	// do the same for light_dir property
 	shadow.light_dir = spot.get_direction();
 	// *********************************
 
@@ -91,7 +92,7 @@ bool render() {
 	renderer::set_render_target(shadow);
 	// Clear depth buffer bit
 	glClear(GL_DEPTH_BUFFER_BIT);
-	// Set render mode to cull face
+	// Set face cull mode to front
 	glCullFace(GL_FRONT);
 	// *********************************
 
@@ -115,11 +116,10 @@ bool render() {
 		// Render mesh
 		renderer::render(m);
 	}
-
 	// *********************************
 	// Set render target back to the screen
 	renderer::set_render_target();
-	// Set cull face to back
+	// Set face cull mode to back
 	glCullFace(GL_BACK);
 	// *********************************
 

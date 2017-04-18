@@ -21,16 +21,35 @@ layout(location = 0) out vec4 colour;
 void main() {
   // *********************************
   // Start with colour as black
-
+  colour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
   // Loop through each sample vector
-
+  for (int i = 0; i < 4; i++)
+  {
     // Calculate tex coord to sample
-
+	vec2 uv = tex_coord + vec2(samples[i].x * inverse_width, samples[i].y * inverse_height);
     // Sample the texture and scale appropriately
     // - scale factor stored in w component
-
-
+	colour += texture(tex, uv) * samples[i].w;
+  }
+  /*
+  for (int i = 0; i < 7; i++)
+  {
+    // Calculate tex coord to sample
+	vec2 uv = tex_coord + vec2(gaussian_one[i].x * inverse_width, gaussian_one[i].y * inverse_height);
+    // Sample the texture and scale appropriately
+    // - scale factor stored in w component
+	colour += texture(tex, uv) * gaussian_one[i].w;
+  }
+  for (int i = 0; i < 7; i++)
+  {
+    // Calculate tex coord to sample
+	vec2 uv = tex_coord + vec2(gaussian_two[i].x * inverse_width, gaussian_two[i].y * inverse_height);
+    // Sample the texture and scale appropriately
+    // - scale factor stored in w component
+	colour += texture(tex, uv) * gaussian_two[i].w;
+  }
+  */
   // Ensure alpha is 1.0
-
+  colour.a = 1.0f;
   // *********************************
 }
