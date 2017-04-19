@@ -9,11 +9,13 @@ mesh terr;
 effect eff;
 mesh skybox;
 effect sky_eff;
+//moon
 mesh moon;
 effect moon_eff;
 texture moon_tex;
 texture moon_norm_tex;
 directional_light lunarlight;
+//water
 mesh water;
 effect water_eff;
 texture watertex;
@@ -23,18 +25,24 @@ free_camera cam;
 cubemap cube_map;
 directional_light light;
 texture tex[4];
-map<string, mesh> meshes;
-map<string, texture> textures;
-effect geom_eff;
 float theta = 0.0f;
-directional_light geomlight;
+//flames
 mesh fire;
 texture fire_tex;
 effect fire_eff;
 texture fire_dissolve;
-spot_light flames;
 vec2 uv_scroll2;
 float dissolve_factor = 1.0f;
+//filter
+frame_buffer frame;
+geometry screenquad;
+bool filter = false;
+effect filter_eff;
+//geometry
+map<string, mesh> meshes;
+map<string, texture> textures;
+vector<spot_light> flames(5);
+
 
 void generate_terrain(geometry &geom, const texture &height_map, unsigned int width, unsigned int depth,
 	float height_scale) {
@@ -172,6 +180,7 @@ void generate_terrain(geometry &geom, const texture &height_map, unsigned int wi
 }
 
 bool load_content() {
+
 	//materials
 	material moonmat;
 	moonmat.set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -245,18 +254,32 @@ bool load_content() {
 	
 	//campfire
 	fire = mesh(geometry_builder::create_pyramid());
-	fire.get_transform().scale = vec3(2.0f, 1.0f, 2.0f);
-	fire.get_transform().translate(vec3(0.0f, 0.25f, 0.0f));
+	fire.get_transform().scale = vec3(2.0f/50, 1.0f/50, 2.0f/50);
+	fire.get_transform().translate(vec3(-5.0f, 0.52f, 1.0f));
 	fire_eff.add_shader("shaders/dissolve.vert", GL_VERTEX_SHADER);
 	fire_eff.add_shader("shaders/dissolve.frag", GL_FRAGMENT_SHADER);
 	fire_eff.build();
 	fire_tex = texture("textures/fire.jpg");
 	fire_dissolve = texture("textures/blend_map4.jpg");
-	flames.set_position(vec3(0.0f, 10.0f, 0.0f));
-	flames.set_range(15.0f);
-	flames.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
-	flames.set_light_colour(vec4(2.28f, 0.8f, 0.34f, 1.0f));
-	
+	flames[0].set_position(vec3(-5.0f, 0.52f, 1.0f));
+	flames[0].set_range(15.0f);
+	flames[0].set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
+	flames[0].set_light_colour(vec4(2.28f, 0.8f, 0.34f, 1.0f));
+
+	//filter
+	// Create frame buffer - use screen width and height
+	frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	vector<vec3> positions{ vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f), vec3(-1.0f, 1.0f, 0.0f),
+		vec3(1.0f, 1.0f, 0.0f) };
+	vector<vec2> tex_coords{ vec2(0.0, 0.0), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
+	screenquad.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
+	screenquad.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
+	screenquad.set_type(GL_TRIANGLE_STRIP);
+	filter_eff.add_shader("shaders/simple_texture.vert", GL_VERTEX_SHADER);
+	filter_eff.add_shader("shaders.greyscale.frag", GL_FRAGMENT_SHADER);
+	filter_eff.build();
+
+
 	// Load in necessary shaders
 	eff.add_shader("60_Terrain/terrain.vert", GL_VERTEX_SHADER);
 	eff.add_shader("60_Terrain/terrain.frag", GL_FRAGMENT_SHADER);
@@ -326,6 +349,16 @@ bool update(float delta_time) {
 	}
 	if (glfwGetKey(renderer::get_window(), 'R')) {
 		translation.y += 10.0f * delta_time;
+	}
+
+	//filter
+	if (glfwGetKey(renderer::get_window(), 'F')) {
+		if (filter = false) {
+			filter = true;
+		}
+		else if (filter = true) {
+			filter = false;
+		}
 	}
 
 	uv_scroll += vec2(1, -delta_time * 0.025);
@@ -474,6 +507,7 @@ bool firerender() {
 	glUniform1f(fire_eff.get_uniform_location("dissolve_factor"), dissolve_factor);
 	renderer::bind(fire_tex, 0);
 	renderer::bind(fire_dissolve, 1);
+	//renderer::bind(flames, "spots");
 	glUniform1i(fire_eff.get_uniform_location("tex"), 0);
 	glUniform1i(fire_eff.get_uniform_location("dissolve"), 1);
 	glUniform2fv(fire_eff.get_uniform_location("UV_SCROLL"), 1, value_ptr(uv_scroll2));
@@ -483,11 +517,35 @@ bool firerender() {
 	return true;
 }
 
+bool filterrender() {
+	renderer::set_render_target(frame);
+	// Clear frame
+	renderer::clear();
+	// Set render target back to the screen
+	renderer::set_render_target();
+	// Bind Tex effect
+	renderer::bind(filter_eff);
+	// MVP is now the identity matrix
+	auto MVP = mat4(1);
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(filter_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	// Bind texture from frame buffer
+	renderer::bind(frame.get_frame(), 1);
+	// Set the tex uniform
+	glUniform1i(filter_eff.get_uniform_location("tex"), 1);
+	// Render the screen quad
+	renderer::render(screenquad);
+	// *********************************
+	return true;
+}
+
 bool render() {
 	skyboxrender();
 	moonrender();
 	terrainrender();
 	waterrender();
+	firerender();
+	filterrender();
 	return true;
 }
 

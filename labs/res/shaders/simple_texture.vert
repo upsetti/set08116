@@ -19,9 +19,9 @@ uniform vec4 light_colour;
 // Direction of the light
 uniform vec3 light_dir;
 // Incoming position
-layout(location = 0) in vec3 position;
+layout(location = 3) in vec3 position;
 // Incoming normal
-layout(location = 2) in vec3 normal;
+layout(location = 4) in vec3 normal;
 // Outgoing vertex colour
 layout(location = 0) out vec4 vertex_colour;
 
