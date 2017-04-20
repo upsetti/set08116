@@ -37,6 +37,9 @@ effect fire_eff;
 texture fire_dissolve;
 float dissolve_factor = 1.0f;
 
+mesh water;
+effect water_eff;
+
 bool initialise() {
 	// hide the cursor / get initial mouse position
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -94,8 +97,11 @@ bool load_content() {
 	moon_eff.build();
 
 	// Create enviroment
-	meshes["plane"] = mesh(geometry_builder::create_plane(65, 65));
-	textures["plane"] = texture("textures/darksand.jpg");
+	water = mesh(geometry_builder::create_plane(65, 65));
+	water_eff.add_shader("shaders/WaterVertex.vert", GL_VERTEX_SHADER);
+	water_eff.add_shader("shaders/WaterFragment.frag", GL_FRAGMENT_SHADER);
+	water_eff.build();
+
 	//trees
 	meshes["canopy"] = mesh(geometry_builder::create_pyramid());
 	meshes["canopy"].get_transform().scale = vec3(5.0f, 10.0f, 5.0f);
@@ -123,24 +129,24 @@ bool load_content() {
 	textures["trunk2"] = texture("textures/trunk.png");
 
 	meshes["orb"] = mesh(geometry_builder::create_sphere(20, 20));
-	meshes["orb"].get_transform().scale = vec3(0.05f, 0.05f, 0.05f);
-	meshes["orb"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
+	meshes["orb"].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
+	meshes["orb"].get_transform().translate(vec3(0.0, 10.0f, 0.0f));
 	textures["orb"] = texture("textures/universe.jpg");
 	meshes["torus1"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
-	meshes["torus1"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
-	meshes["torus1"].get_transform().scale = vec3(0.025f, 0.025f, 0.025f);
+	meshes["torus1"].get_transform().translate(vec3(0.0, 10.0f, 0.0f));
+	meshes["torus1"].get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
 	mat.set_diffuse(vec4(1.0f, 2.0f, 2.0f, 1.0f));
 	meshes["torus1"].set_material(mat);
 	textures["torus1"] = texture("textures/geo.jpg");
 	meshes["torus2"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
-	meshes["torus2"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
-	meshes["torus2"].get_transform().scale = vec3(0.05f, 0.05f, 0.05f);
+	meshes["torus2"].get_transform().translate(vec3(0.0, 10.0f, 0.0f));
+	meshes["torus2"].get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
 	mat.set_diffuse(vec4(1.5f, 1.0f, 0.8f, 1.0f));
 	meshes["torus2"].set_material(mat);
 	textures["torus2"] = texture("textures/colour.jpg");
 	meshes["torus3"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
-	meshes["torus3"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
-	meshes["torus3"].get_transform().scale = vec3(0.075, 0.075, 0.075);
+	meshes["torus3"].get_transform().translate(vec3(0.0, 10.0f, 0.0f));
+	meshes["torus3"].get_transform().scale = vec3(0.75, 0.75, 0.75);
 	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	meshes["torus3"].set_material(mat);
 	textures["torus3"] = texture("textures/lamecolour.jpg");
@@ -483,6 +489,26 @@ void geometryrender() {
 	}
 }
 
+void waterrender() {
+	renderer::bind(water_eff);
+	auto M = water.get_transform().get_transform_matrix();
+	//Camera type
+	auto V = targetcam.get_view();//freecam.get_view();
+	auto P = targetcam.get_projection();//freecam.get_projection();
+	if (Fcam) {
+		V = freecam.get_view();
+		P = freecam.get_projection();
+	}
+	auto MVP = P * V * M;
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(water_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+
+	glUniformMatrix4fv(water_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+	// Set N matrix uniform - remember - 3x3 matrix
+	glUniformMatrix3fv(water_eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(water.get_transform().get_normal_matrix()));
+	renderer::render(water);
+}
+
 bool render() {
 
 	skyboxrender();
@@ -490,6 +516,7 @@ bool render() {
 	geometryrender();
 	//hierarchyrender();
 	firerender();
+	waterrender();
 	return true;
 }
 

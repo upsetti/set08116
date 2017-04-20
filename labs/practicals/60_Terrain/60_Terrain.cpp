@@ -33,15 +33,13 @@ effect fire_eff;
 texture fire_dissolve;
 vec2 uv_scroll2;
 float dissolve_factor = 1.0f;
-//filter
-frame_buffer frame;
-geometry screenquad;
-bool filter = false;
-effect filter_eff;
+vector<spot_light> flames(5);
 //geometry
 map<string, mesh> meshes;
 map<string, texture> textures;
-vector<spot_light> flames(5);
+effect geom_eff;
+vector<point_light> points(4);
+vector<spot_light> spots(5);
 
 
 void generate_terrain(geometry &geom, const texture &height_map, unsigned int width, unsigned int depth,
@@ -252,6 +250,33 @@ bool load_content() {
 	moon_eff.add_shader("shaders/part_normal_map.frag", GL_FRAGMENT_SHADER);
 	moon_eff.build();
 	
+	//geometry
+	meshes["orb"] = mesh(geometry_builder::create_sphere(20, 20));
+	meshes["orb"].get_transform().scale = vec3(0.05f, 0.05f, 0.05f);
+	meshes["orb"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
+	textures["orb"] = texture("textures/universe.jpg");
+	meshes["torus1"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
+	meshes["torus1"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
+	meshes["torus1"].get_transform().scale = vec3(0.025f, 0.025f, 0.025f);
+	mat.set_diffuse(vec4(1.0f, 2.0f, 2.0f, 1.0f));
+	meshes["torus1"].set_material(mat);
+	textures["torus1"] = texture("textures/geo.jpg");
+	meshes["torus2"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
+	meshes["torus2"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
+	meshes["torus2"].get_transform().scale = vec3(0.05f, 0.05f, 0.05f);
+	mat.set_diffuse(vec4(1.5f, 1.0f, 0.8f, 1.0f));
+	meshes["torus2"].set_material(mat);
+	textures["torus2"] = texture("textures/colour.jpg");
+	meshes["torus3"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
+	meshes["torus3"].get_transform().translate(vec3(-8.0, 2.5f, -8.0f));
+	meshes["torus3"].get_transform().scale = vec3(0.075, 0.075, 0.075);
+	mat.set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	meshes["torus3"].set_material(mat);
+	textures["torus3"] = texture("textures/lamecolour.jpg");
+	geom_eff.add_shader("shaders/multi-light.vert", GL_VERTEX_SHADER);
+	geom_eff.add_shader("shaders/multi-light.frag", GL_FRAGMENT_SHADER);
+	geom_eff.build();
+
 	//campfire
 	fire = mesh(geometry_builder::create_pyramid());
 	fire.get_transform().scale = vec3(2.0f/50, 1.0f/50, 2.0f/50);
@@ -266,26 +291,17 @@ bool load_content() {
 	flames[0].set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
 	flames[0].set_light_colour(vec4(2.28f, 0.8f, 0.34f, 1.0f));
 
-	//filter
-	// Create frame buffer - use screen width and height
-	frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
-	vector<vec3> positions{ vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f), vec3(-1.0f, 1.0f, 0.0f),
-		vec3(1.0f, 1.0f, 0.0f) };
-	vector<vec2> tex_coords{ vec2(0.0, 0.0), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
-	screenquad.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
-	screenquad.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
-	screenquad.set_type(GL_TRIANGLE_STRIP);
-	filter_eff.add_shader("shaders/simple_texture.vert", GL_VERTEX_SHADER);
-	filter_eff.add_shader("shaders.greyscale.frag", GL_FRAGMENT_SHADER);
-	filter_eff.build();
-
-
 	// Load in necessary shaders
 	eff.add_shader("60_Terrain/terrain.vert", GL_VERTEX_SHADER);
 	eff.add_shader("60_Terrain/terrain.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("shaders/part_direction.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("60_Terrain/part_weighted_texture_4.frag", GL_FRAGMENT_SHADER);
 	eff.build();
+
+	spots[0].set_position(vec3(-8.0, 5.0f, -8.0f));
+	spots[0].set_range(10.0f);
+	spots[0].set_light_colour(vec4(0.9f, 0.9f, 0.9f, 1.0f));
+	spots[0].set_direction(normalize(vec3(1.0f, 1.0f, 1.0f)));
 
 	// Material definitions
 	light.set_ambient_intensity(vec4(0.005f, 0.005f, 0.005f, 1.0f));
@@ -351,24 +367,14 @@ bool update(float delta_time) {
 		translation.y += 10.0f * delta_time;
 	}
 
-	//filter
-	if (glfwGetKey(renderer::get_window(), 'F')) {
-		if (filter = false) {
-			filter = true;
-		}
-		else if (filter = true) {
-			filter = false;
-		}
-	}
-
 	uv_scroll += vec2(1, -delta_time * 0.025);
 	uv_scroll2 += vec2(0, -delta_time * 2.5);
 	skybox.get_transform().rotate(vec3(0.0f, delta_time * 0.015, 0.0f));
 	theta += pi<float>() * delta_time / 2;
-	/*meshes["orb"].get_transform().rotate(vec3(delta_time / 2, delta_time / 2, delta_time / 2));
+	meshes["orb"].get_transform().rotate(vec3(delta_time / 2, delta_time / 2, delta_time / 2));
 	meshes["torus1"].get_transform().rotate(vec3(-delta_time * 2, -delta_time * 2, delta_time));
 	meshes["torus2"].get_transform().rotate(vec3(0.0f, delta_time, delta_time));
-	meshes["torus3"].get_transform().rotate(vec3(-delta_time / 2, -delta_time / 2, 0.0f));*/
+	meshes["torus3"].get_transform().rotate(vec3(-delta_time / 2, -delta_time / 2, 0.0f));
 	// Move camera
 	cam.move(translation);
 	// Update the camera
@@ -517,26 +523,38 @@ bool firerender() {
 	return true;
 }
 
-bool filterrender() {
-	renderer::set_render_target(frame);
-	// Clear frame
-	renderer::clear();
-	// Set render target back to the screen
-	renderer::set_render_target();
-	// Bind Tex effect
-	renderer::bind(filter_eff);
-	// MVP is now the identity matrix
-	auto MVP = mat4(1);
-	// Set MVP matrix uniform
-	glUniformMatrix4fv(filter_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	// Bind texture from frame buffer
-	renderer::bind(frame.get_frame(), 1);
-	// Set the tex uniform
-	glUniform1i(filter_eff.get_uniform_location("tex"), 1);
-	// Render the screen quad
-	renderer::render(screenquad);
-	// *********************************
-	return true;
+void geometryrender() {
+
+	for (auto &e : meshes) {
+		auto m = e.second;
+		// Bind effect
+		renderer::bind(geom_eff);
+		// Create MVP matrix
+		auto M = m.get_transform().get_transform_matrix();
+		//Camera type
+		auto V = cam.get_view();//freecam.get_view();
+		auto P = cam.get_projection();//freecam.get_projection();
+		auto MVP = P * V * M;
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(geom_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+
+		glUniformMatrix4fv(geom_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+		// Set N matrix uniform - remember - 3x3 matrix
+		glUniformMatrix3fv(geom_eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
+		// Bind material
+		renderer::bind(m.get_material(), "mat");
+		renderer::bind(m.get_material(), "mat2");
+		// Bind point / spot lights
+		renderer::bind(points, "points");
+		renderer::bind(spots, "spots");
+		// Bind / set texture
+		renderer::bind(textures[e.first], 0);
+		glUniform1i(geom_eff.get_uniform_location("tex"), 0);
+		// Set eye position
+		glUniform3fv(geom_eff.get_uniform_location("eye_pos"), 1, value_ptr(cam.get_position()));
+		// Render meshes
+		renderer::render(m);
+	}
 }
 
 bool render() {
@@ -545,7 +563,7 @@ bool render() {
 	terrainrender();
 	waterrender();
 	firerender();
-	filterrender();
+	geometryrender();
 	return true;
 }
 
